@@ -46,6 +46,7 @@ private:
 
 	uint64_t fEventsRead;
 	double   fRunTime;
+	double   fOldRunTime;
 
 	bool fDebug;
 };

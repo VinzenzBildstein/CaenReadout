@@ -34,9 +34,10 @@ int main(int argc, char** argv)
 
 	TH1F tsDiff("tsDiff", "#DeltaTS, different channels;#DeltaTS [sample]", 100000, 0., 100000.);
 	TH1F tDiff("tDiff", "#Deltat, different channels;#Deltat [#mus]", 10000, 0., 1000.);
-	TH1F tDiffZoom("tDiffZoom", "#Deltat, different channels;#Deltat [ns]", 10000, 0., 1000.);
+	TH2F tDiffZoomVsCharge("tDiffZoomVsCharge", "#Deltat, different channels vs. charge;charge [channels];#Deltat [ns]", 1000, 0., 65000., 1280, 0., 10.);
 	TH2F cfdDiffVsTsDiff("cfdDiffVsTsDiff", "#DeltaCFD vs. #DeltaTS;#DeltaTS [sample];#DeltaCFD [ns]", 10, -0., 9.5, 512, 0., 2.);
 	TH2F tDiffSame("tDiffSame", "#Deltat, same channel;Channel Number;#Deltat [#mus]", 2, -0., 1.5, 1000, 0., 1000.);
+	TH2F channelVsCharge("channelVsCharge", "Channel # vs. charge;charge [channels]", 1000, 0., 65000., 8, -0.5, 7.5);
 
 	for(Long64_t i = 0; i < tree->GetEntries(); ++i) {
 		tree->GetEntry(i);
@@ -50,10 +51,12 @@ int main(int argc, char** argv)
 				// different channel
 				tsDiff.Fill(event->GetTimestamp() - it.second.GetTimestamp());
 				tDiff.Fill((event->GetTime() - it.second.GetTime())/1e3);
-				tDiffZoom.Fill((event->GetTime() - it.second.GetTime()));
+				tDiffZoomVsCharge.Fill(event->Energy(), event->GetTime() - it.second.GetTime());
 				cfdDiffVsTsDiff.Fill(event->GetTimestamp() - it.second.GetTimestamp(), (event->Cfd() - it.second.Cfd())/512.);
 			}
 		}
+
+		channelVsCharge.Fill(event->Energy(), event->Channel());
 
 		// update last event of this channel to current event
 		lastEvents[event->Channel()] = *event;
@@ -68,9 +71,10 @@ int main(int argc, char** argv)
 
 	tsDiff.Write();
 	tDiff.Write();
-	tDiffZoom.Write();
+	tDiffZoomVsCharge.Write();
 	cfdDiffVsTsDiff.Write();
 	tDiffSame.Write();
+	channelVsCharge.Write();
 
 	output.Close();
 

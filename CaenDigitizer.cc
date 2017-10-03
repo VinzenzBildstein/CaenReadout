@@ -84,6 +84,8 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 		CAEN_DGTZ_SWStartAcquisition(fHandle[b]);
 	}
 
+	std::cout<<"started data aquisition"<<std::endl;
+
 	fStopwatch.Start();
 
 	while(true) {
@@ -133,8 +135,12 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 			fRunTime =  fStopwatch.RealTime();
 			fStopwatch.Continue();
 			if(fRunTime > runTime) {
-				std::cout<<"Ran "<<fRunTime<<" s, got "<<fEventsRead<<" events, done!"<<std::endl;
+				std::cout<<"Ran "<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s, done!"<<std::endl;
 				break;
+			}
+			if(fRunTime - fOldRunTime > fSettings->Update()) {
+				std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s\r"<<std::flush;
+				fOldRunTime = fRunTime;
 			}
 		}
 		if(fDebug) {

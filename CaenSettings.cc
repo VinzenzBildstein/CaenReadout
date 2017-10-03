@@ -7,6 +7,11 @@
 
 ClassImp(CaenSettings)
 
+CaenSettings::CaenSettings()
+{
+	std::cout<<"This constructor should only be used by ROOT!"<<std::endl;
+}
+
 CaenSettings::CaenSettings(const std::string& filename, bool debug)
 {
 	auto settings = new TEnv(filename.c_str());
@@ -14,6 +19,8 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 		std::cerr<<"Error occured trying to read \""<<filename<<"\""<<std::endl;
 		throw;
 	}
+
+	fUpdate = settings->GetValue("UpdateFrequency", 1.);
 
 	fNumberOfBoards = settings->GetValue("NumberOfBoards", 1);
 	if(fNumberOfBoards < 1) {
@@ -226,3 +233,4 @@ void CaenSettings::Print()
 	
 	//std::vector<CAEN_DGTZ_DPP_PSD_Params_t*> fChannelParameter;
 }
+

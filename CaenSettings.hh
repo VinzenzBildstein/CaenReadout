@@ -9,6 +9,7 @@
 
 class CaenSettings : public TObject {
 public:
+	CaenSettings();
 	CaenSettings(const std::string& filename, bool debug);
 	~CaenSettings();
 
@@ -36,6 +37,7 @@ public:
 	size_t BufferSize() const { return fBufferSize; }
 
 	double RunLength() const { return fRunLength; }
+	double Update() const { return fUpdate; }
 
 private:
 	int fNumberOfBoards;
@@ -58,7 +60,8 @@ private:
 	size_t fBufferSize;
 
 	double fRunLength;
+	double fUpdate;
 
-	ClassDef(CaenSettings, 2);
+	ClassDef(CaenSettings, 3);
 };
 #endif
