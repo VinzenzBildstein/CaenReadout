@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 	TH2F cfdDiffVsTsDiff("cfdDiffVsTsDiff", "#DeltaCFD vs. #DeltaTS;#DeltaTS [sample];#DeltaCFD [ns]", 10, -0., 9.5, 512, 0., 2.);
 	TH2F tDiffSame("tDiffSame", "#Deltat, same channel;Channel Number;#Deltat [#mus]", 2, -0., 1.5, 1000, 0., 1000.);
 	TH2F channelVsCharge("channelVsCharge", "Channel # vs. charge;charge [channels]", 1000, 0., 65000., 8, -0.5, 7.5);
+	TH2F channelVsShortGate("channelVsShortGate", "Channel # vs. short gate;short gate [channels]", 1000, 0., 65000., 8, -0.5, 7.5);
 
 	for(Long64_t i = 0; i < tree->GetEntries(); ++i) {
 		tree->GetEntry(i);
@@ -57,6 +58,7 @@ int main(int argc, char** argv)
 		}
 
 		channelVsCharge.Fill(event->Energy(), event->Channel());
+		channelVsShortGate.Fill(event->ShortGate(), event->Channel());
 
 		// update last event of this channel to current event
 		lastEvents[event->Channel()] = *event;
@@ -75,6 +77,7 @@ int main(int argc, char** argv)
 	cfdDiffVsTsDiff.Write();
 	tDiffSame.Write();
 	channelVsCharge.Write();
+	channelVsShortGate.Write();
 
 	output.Close();
 

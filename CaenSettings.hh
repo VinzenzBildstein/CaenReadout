@@ -25,6 +25,7 @@ public:
 	uint32_t ChannelMask(int i) const { return fChannelMask[i]; }
 	CAEN_DGTZ_RunSyncMode_t RunSync(int i) const { return fRunSync[i]; }
 	int EventAggregation(int i) const { return fEventAggregation[i]; }
+	CAEN_DGTZ_TriggerMode_t TriggerMode(int i) const { return fTriggerMode[i]; }
 	uint32_t RecordLength(int i, int j) const { return fRecordLength[i][j]; }
 	uint32_t DCOffset(int i, int j) const { return fDCOffset[i][j]; }
 	uint32_t PreTrigger(int i, int j) const { return fPreTrigger[i][j]; }
@@ -48,6 +49,7 @@ private:
 	std::vector<uint32_t> fChannelMask;
 	std::vector<CAEN_DGTZ_RunSyncMode_t> fRunSync;
 	std::vector<int> fEventAggregation;
+	std::vector<CAEN_DGTZ_TriggerMode_t> fTriggerMode;
 	std::vector<std::vector<uint32_t> > fRecordLength;
 	std::vector<std::vector<uint32_t> > fDCOffset;
 	std::vector<std::vector<uint32_t> > fPreTrigger;

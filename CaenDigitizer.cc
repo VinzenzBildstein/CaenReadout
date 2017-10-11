@@ -189,7 +189,7 @@ void CaenDigitizer::ProgramDigitizer(int b)
 		throw std::runtime_error(Form("Error %d when setting IO level", errorCode));
 	}
 
-	errorCode = CAEN_DGTZ_SetExtTriggerInputMode(fHandle[b], CAEN_DGTZ_TRGMODE_ACQ_ONLY);
+	errorCode = CAEN_DGTZ_SetExtTriggerInputMode(fHandle[b], fSettings->TriggerMode(b));
 
 	if(errorCode != 0) {
 		throw std::runtime_error(Form("Error %d when setting external trigger DPP events", errorCode));

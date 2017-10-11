@@ -41,6 +41,7 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 	fChannelMask.resize(fNumberOfBoards);
 	fRunSync.resize(fNumberOfBoards);
 	fEventAggregation.resize(fNumberOfBoards);
+	fTriggerMode.resize(fNumberOfBoards);
 	fRecordLength.resize(fNumberOfBoards);
 	fDCOffset.resize(fNumberOfBoards);
 	fPreTrigger.resize(fNumberOfBoards);
@@ -55,6 +56,7 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 		fChannelMask[i]      = settings->GetValue(Form("Board.%d.ChannelMask", i), 0xff);
 		fRunSync[i]          = static_cast<CAEN_DGTZ_RunSyncMode_t>(settings->GetValue(Form("Board.%d.RunSync", i), CAEN_DGTZ_RUN_SYNC_Disabled));
 		fEventAggregation[i] = settings->GetValue(Form("Board.%d.EventAggregate", i), 0);
+		fTriggerMode[i]      = static_cast<CAEN_DGTZ_TriggerMode_t>(settings->GetValue(Form("Board.%d.TriggerMode", i), CAEN_DGTZ_TRGMODE_ACQ_ONLY));
 
 		fRecordLength[i].resize(fNumberOfChannels);
 		fDCOffset[i].resize(fNumberOfChannels);
@@ -171,6 +173,7 @@ void CaenSettings::Print()
 				break;
 		}
 		std::cout<<"   event aggregation "<<fEventAggregation[i]<<std::endl;
+		std::cout<<"   trigger mode "<<fTriggerMode[i]<<std::endl;
 		for(int ch = 0; ch < fNumberOfChannels; ++ch) {
 			std::cout<<"   Channel #"<<ch<<":"<<std::endl;
 			std::cout<<"      record length "<<fRecordLength[i][ch]<<std::endl;
