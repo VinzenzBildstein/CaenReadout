@@ -30,6 +30,7 @@ public:
 	uint32_t DCOffset(int i, int j) const { return fDCOffset[i][j]; }
 	uint32_t PreTrigger(int i, int j) const { return fPreTrigger[i][j]; }
 	CAEN_DGTZ_PulsePolarity_t PulsePolarity(int i, int j) const { return fPulsePolarity[i][j]; }
+	bool EnableCfd(int i, int j) const { return fEnableCfd[i][j]; }
 	uint16_t CfdParameters(int i, int j) const { return fCfdParameters[i][j]; }
 	
 	int NumberOfChannels() const { return fNumberOfChannels; }
@@ -54,6 +55,7 @@ private:
 	std::vector<std::vector<uint32_t> > fDCOffset;
 	std::vector<std::vector<uint32_t> > fPreTrigger;
 	std::vector<std::vector<CAEN_DGTZ_PulsePolarity_t> > fPulsePolarity;
+	std::vector<std::vector<bool> > fEnableCfd;
 	std::vector<std::vector<uint16_t> > fCfdParameters;
 	
 	int fNumberOfChannels;

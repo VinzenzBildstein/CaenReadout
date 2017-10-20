@@ -16,7 +16,7 @@ public:
 	CaenDigitizer(const CaenSettings& settings, bool debug);
 	~CaenDigitizer();
 
-	double Run(TFile* outputFile, uint64_t events, double runTime);
+	double Run(TFile* outputFile, uint64_t events = 0, double runTime = 0);
 
 private:
 	void ProgramDigitizer(int board);

@@ -20,7 +20,7 @@ COMMON_DIR 	= $(HOME)/CommandLineInterface
 
 INCLUDES        = -I$(COMMON_DIR) -I.
 
-LIBRARIES	= CommandLineInterface CAENDigitizer
+LIBRARIES	= ncurses CommandLineInterface CAENDigitizer
 
 CC		= gcc
 CXX   = g++

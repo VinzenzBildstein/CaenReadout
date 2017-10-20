@@ -1,0 +1,7 @@
+*.o
+*.dat
+*.root
+CaenReadoutDictionary_rdict.pcm
+CaenReadoutDictionary.cc
+CaenReadout
+Histograms

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <curses.h>
+
 CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
 	: fSettings(&settings), fOutputFile(nullptr), fTree(nullptr), fEvent(new CaenEvent), fEventsRead(0), fRunTime(0.), fDebug(debug)
 {
@@ -33,9 +35,8 @@ CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
 		if(errorCode != 0) {
 			throw std::runtime_error(Form("Error %d when reading digitizer info", errorCode));
 		}
-		std::cout<<std::endl
-			<<"Connected to CAEN Digitizer Model "<<boardInfo.ModelName<<" as "<<b<<". board"<<std::endl
-			<<"Firmware is ROC "<<boardInfo.ROC_FirmwareRel<<", AMC "<<boardInfo.AMC_FirmwareRel<<std::endl;
+		printw("\nConnected to CAEN Digitizer Model %s as %d. board\n", boardInfo.ModelName, b);
+		printw("\nFirmware is ROC %s, AMC %s\n", boardInfo.ROC_FirmwareRel, boardInfo.AMC_FirmwareRel);
 
 		std::stringstream str(boardInfo.AMC_FirmwareRel);
 		str>>majorNumber;
@@ -79,16 +80,21 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 
 	CreateTree();
 
+	int ch = 0; //character read from input
+
 	// start acquisition
 	for(int b = 0; b < fSettings->NumberOfBoards(); ++b) {
 		CAEN_DGTZ_SWStartAcquisition(fHandle[b]);
 	}
 
-	std::cout<<"started data aquisition"<<std::endl;
+	printw("started data aquisition\n");
 
 	fStopwatch.Start();
 
-	while(true) {
+	int x, y;
+	getyx(stdscr, y, x);
+
+	while(ch != 's') {
 		// read data
 		if(fDebug) {
 			std::cout<<"--------------------------------------------------------------------------------"<<std::endl;
@@ -127,30 +133,35 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 		}
 		// check if we got enough events
 		if(events > 0 && fEventsRead > events) {
-			std::cout<<"Got "<<fEventsRead<<" events after "<<fStopwatch.RealTime()<<" s, done!"<<std::endl;
+			printw("Got %lu events after %.1f s, done!\n", fEventsRead, fStopwatch.RealTime());
 			break;
 		}
 		// check if we've run long enough
-		if(runTime > 0) {
-			fRunTime =  fStopwatch.RealTime();
-			fStopwatch.Continue();
-			if(fRunTime > runTime) {
-				std::cout<<"Ran "<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s, done!"<<std::endl;
-				break;
-			}
-			if(fRunTime - fOldRunTime > fSettings->Update()) {
-				std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s\r"<<std::flush;
-				fOldRunTime = fRunTime;
+		fRunTime =  fStopwatch.RealTime();
+		fStopwatch.Continue();
+		if(runTime > 0 && fRunTime > runTime) {
+			printw("Ran %.1f s, got %lu events = %.1f events/s, done!\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
+			break;
+		}
+		if(fRunTime - fOldRunTime > fSettings->Update()) {
+			//printw("%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
+			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
+			fOldRunTime = fRunTime;
+		}
+		if((ch = getch()) != ERR) {
+			// nothing to be done here, the only key recognized right now is s which stopps the whole loop
+			if(fDebug) {
+				std::cout<<"got character "<<ch<<" = "<<static_cast<char>(ch)<<std::endl;
 			}
 		}
 		if(fDebug) {
 			std::cout<<"--------------------------------------------------------------------------------"<<std::endl;
 		}
 	}
-	std::cout<<"flushing remaining "<<fOrdered.size()<<" events"<<std::endl;
+	printw("flushing remaining %lu events\n", fOrdered.size());
 	// write remaining events
 	WriteEvents(true);
-	std::cout<<"done"<<std::endl;
+	printw("done\n");
 	// stop acquisition
 	for(int b = 0; b < fSettings->NumberOfBoards(); ++b) {
 		CAEN_DGTZ_SWStopAcquisition(fHandle[b]);
@@ -234,18 +245,19 @@ void CaenDigitizer::ProgramDigitizer(int b)
 
 			errorCode = CAEN_DGTZ_SetChannelPulsePolarity(fHandle[b], ch, fSettings->PulsePolarity(b, ch));
 
-			// enable CFD mode
-			address = 0x1080 + ch*0x100;
-			CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
-			data |= 0x40; // no mask necessary, we just set one bit
-			CAEN_DGTZ_WriteRegister(fHandle[b], address, data);
+			if(fSettings->EnableCfd(b, ch)) {
+				// enable CFD mode
+				address = 0x1080 + ch*0x100;
+				CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
+				data |= 0x40; // no mask necessary, we just set one bit
+				CAEN_DGTZ_WriteRegister(fHandle[b], address, data);
 
-			// set CFD parameters
-			address = 0x103c + ch*0x100;
-			CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
-			data = (data & ~0xfff) | fSettings->CfdParameters(b, ch);
-			CAEN_DGTZ_WriteRegister(fHandle[b], address, data);
-
+				// set CFD parameters
+				address = 0x103c + ch*0x100;
+				CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
+				data = (data & ~0xfff) | fSettings->CfdParameters(b, ch);
+				CAEN_DGTZ_WriteRegister(fHandle[b], address, data);
+			}
 			// write extended TS, flags, and fine TS (from CFD) to extra word
 			address = 0x1084 + ch*0x100;
 			CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
@@ -282,7 +294,7 @@ void CaenDigitizer::DecodeData(int b)
 		for(i = 0; i < fBufferSize[b]; i += 4) {
 			if(i%16 == 0) {
 				std::cout<<std::endl
-					      <<std::setw(4)<<i/4<<" "<<std::flush;
+					<<std::setw(4)<<i/4<<" "<<std::flush;
 			}
 			std::cout<<std::hex<<"0x"<<std::setw(8)<<std::setfill('0')<<*reinterpret_cast<uint32_t*>(fBuffer[b]+i)<<std::dec<<" ";
 		}
@@ -356,6 +368,8 @@ void CaenDigitizer::SortEvents()
 
 void CaenDigitizer::WriteEvents(bool finish)
 {
+	int x, y;
+	getyx(stdscr, y, x);
 	while(finish || fOrdered.size() > fSettings->BufferSize()) {
 		fEvent = *fOrdered.begin();
 		if(fDebug) {
@@ -367,7 +381,7 @@ void CaenDigitizer::WriteEvents(bool finish)
 		fOrdered.erase(fOrdered.begin());
 		if(finish) {
 			if(fOrdered.size()%1000 == 0) {
-				std::cout<<std::setw(8)<<fOrdered.size()<<" events remaining\r"<<std::flush;
+				mvprintw(y, x, "%8lu events remaining\n", fOrdered.size());
 			}
 			if(fOrdered.size() == 0) {
 				std::cout<<std::endl;

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <curses.h>
 
 #include "TEnv.h"
 
@@ -9,14 +10,14 @@ ClassImp(CaenSettings)
 
 CaenSettings::CaenSettings()
 {
-	std::cout<<"This constructor should only be used by ROOT!"<<std::endl;
+	printw("This constructor should only be used by ROOT!\n");
 }
 
 CaenSettings::CaenSettings(const std::string& filename, bool debug)
 {
 	auto settings = new TEnv(filename.c_str());
 	if(settings->ReadFile(filename.c_str(), kEnvLocal) != 0) {
-		std::cerr<<"Error occured trying to read \""<<filename<<"\""<<std::endl;
+		printw("Error occured trying to read \"%s\"\n", filename.c_str());
 		throw;
 	}
 
@@ -24,12 +25,12 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 
 	fNumberOfBoards = settings->GetValue("NumberOfBoards", 1);
 	if(fNumberOfBoards < 1) {
-		std::cerr<<fNumberOfBoards<<" boards is not possible!"<<std::endl;
+		printw("%d boards is not possible!\n",fNumberOfBoards);
 		throw;
 	}
 	fNumberOfChannels = settings->GetValue("NumberOfChannels", 8);
 	if(fNumberOfChannels < 1) {
-		std::cerr<<fNumberOfChannels<<" maximum channels is not possible!"<<std::endl;
+		printw("%d maximum channels is not possible!\n", fNumberOfChannels);
 		throw;
 	}
 	fBufferSize = settings->GetValue("BufferSize", 100000);
@@ -46,6 +47,7 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 	fDCOffset.resize(fNumberOfBoards);
 	fPreTrigger.resize(fNumberOfBoards);
 	fPulsePolarity.resize(fNumberOfBoards);
+	fEnableCfd.resize(fNumberOfBoards);
 	fCfdParameters.resize(fNumberOfBoards);
 	fChannelParameter.resize(fNumberOfBoards, new CAEN_DGTZ_DPP_PSD_Params_t);
 	for(int i = 0; i < fNumberOfBoards; ++i) {
@@ -62,13 +64,17 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 		fDCOffset[i].resize(fNumberOfChannels);
 		fPreTrigger[i].resize(fNumberOfChannels);
 		fPulsePolarity[i].resize(fNumberOfChannels);
+		fEnableCfd[i].resize(fNumberOfChannels);
 		fCfdParameters[i].resize(fNumberOfChannels);
 		for(int ch = 0; ch < fNumberOfChannels; ++ch) {
 			fRecordLength[i][ch]  = settings->GetValue(Form("Board.%d.Channel.%d.RecordLength", i, ch), 192);
 			fDCOffset[i][ch]      = settings->GetValue(Form("Board.%d.Channel.%d.RunSync", i, ch), 0x8000);
 			fPreTrigger[i][ch]    = settings->GetValue(Form("Board.%d.Channel.%d.RunSync", i, ch), 80);
 			fPulsePolarity[i][ch] = static_cast<CAEN_DGTZ_PulsePolarity_t>(settings->GetValue(Form("Board.%d.Channel.%d.PulsePolarity", i, ch), CAEN_DGTZ_PulsePolarityNegative));
-			fCfdParameters[i][ch] = settings->GetValue(Form("Board.%d.Channel.%d.CfdParameters", i, ch), 0x105);//TODO: Split into interpolation samples, fraction, and delay
+			fEnableCfd[i][ch]     = settings->GetValue(Form("Board.%d.Channel.%d.EnableCfd", i, ch), true);
+			fCfdParameters[i][ch] = (settings->GetValue(Form("Board.%d.Channel.%d.CfdDelay", i, ch), 5) & 0xff);
+			fCfdParameters[i][ch] |= (settings->GetValue(Form("Board.%d.Channel.%d.CfdFraction", i, ch), 0) & 0x3) << 8;
+			fCfdParameters[i][ch] |= (settings->GetValue(Form("Board.%d.Channel.%d.CfdInterpolationPoints", i, ch), 0) & 0x3) << 10;
 		}
 
 		fChannelParameter[i]->purh   = static_cast<CAEN_DGTZ_DPP_PUR_t>(settings->GetValue(Form("Board.%d.PileUpRejection", i), CAEN_DGTZ_DPP_PSD_PUR_DetectOnly));
@@ -191,7 +197,12 @@ void CaenSettings::Print()
 					std::cout<<"unknown"<<std::endl;
 					break;
 			}
-			std::cout<<"      cfd parameters 0x"<<std::hex<<fCfdParameters[i][ch]<<std::dec<<std::endl;
+			if(fEnableCfd[i][ch]) {
+				std::cout<<"      cfd enabled"<<std::endl;
+				std::cout<<"      cfd parameters 0x"<<std::hex<<fCfdParameters[i][ch]<<std::dec<<std::endl;
+			} else {
+				std::cout<<"      cfd disabled"<<std::endl;
+			}
 		}
 		std::cout<<"   pile-up rejection mode ";
 		switch(fChannelParameter[i]->purh) {
