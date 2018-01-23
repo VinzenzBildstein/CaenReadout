@@ -38,6 +38,8 @@ private:
 	// DPP events
 	std::vector<CAEN_DGTZ_DPP_PSD_Event_t**> fEvents;
 	std::vector<std::vector<uint32_t> >      fNofEvents;
+	// waveforms
+	std::vector<CAEN_DGTZ_DPP_PSD_Waveforms_t*> fWaveforms;
 
 	// multiset to store and sort event
 	std::multiset<CaenEvent*, std::function<bool(const CaenEvent*, const CaenEvent*)> > fOrdered;

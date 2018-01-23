@@ -25,7 +25,7 @@ LIBRARIES	= ncurses CommandLineInterface CAENDigitizer
 CC		= gcc
 CXX   = g++
 CPPFLAGS	= $(ROOTINC) $(INCLUDES) -fPIC
-CXXFLAGS	= -pedantic -Wall -Wno-long-long -g -O3 -std=c++11
+CXXFLAGS	= -pedantic -Wall -Wno-long-long -g -O3 -std=c++11 -DUSE_WAVEFORMS -DUSE_CURSES
 
 LDFLAGS		= -g -fpic
 
@@ -44,7 +44,7 @@ LOADLIBES = \
 
 # -------------------- rules --------------------
 
-all:  $(NAME) Histograms $(LIB_DIR)/lib$(NAME).so
+all:  $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms $(LIB_DIR)/lib$(NAME).so
 	@echo Done
 
 $(LIB_DIR)/lib$(NAME).so: $(LOADLIBES)
@@ -58,7 +58,7 @@ $(LIB_DIR)/lib$(NAME).so: $(LOADLIBES)
 
 # -------------------- default rule for executables --------------------
 
-%: %.cc $(LOADLIBES)
+$(BIN_DIR)/%: %.cc $(LOADLIBES)
 	$(CXX) $< $(CXXFLAGS) $(CPPFLAGS) $(LOADLIBES) $(LDLIBS) -o $@
 
 # -------------------- Root stuff --------------------
@@ -84,4 +84,4 @@ tar:
 # -------------------- clean --------------------
 
 clean:
-	rm  -f $(NAME) *.o
+	rm  -f $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms *.o

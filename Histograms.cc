@@ -39,6 +39,7 @@ int main(int argc, char** argv)
 	TH2F tDiffSame("tDiffSame", "#Deltat, same channel;Channel Number;#Deltat [#mus]", 2, -0., 1.5, 1000, 0., 1000.);
 	TH2F channelVsCharge("channelVsCharge", "Channel # vs. charge;charge [channels]", 1000, 0., 65000., 8, -0.5, 7.5);
 	TH2F channelVsShortGate("channelVsShortGate", "Channel # vs. short gate;short gate [channels]", 1000, 0., 65000., 8, -0.5, 7.5);
+	TH2F psdVsCharge("psdVsCharge", "PSD (short gate/charge) vs. charge;charge [channels]", 1000, 0., 65000., 1000, 0.2, 1.2);
 
 	for(Long64_t i = 0; i < tree->GetEntries(); ++i) {
 		tree->GetEntry(i);
@@ -59,6 +60,7 @@ int main(int argc, char** argv)
 
 		channelVsCharge.Fill(event->Energy(), event->Channel());
 		channelVsShortGate.Fill(event->ShortGate(), event->Channel());
+		if(event->Channel() == 0) psdVsCharge.Fill(event->Energy(), static_cast<double>(event->ShortGate())/static_cast<double>(event->Energy()));
 
 		// update last event of this channel to current event
 		lastEvents[event->Channel()] = *event;
@@ -78,6 +80,7 @@ int main(int argc, char** argv)
 	tDiffSame.Write();
 	channelVsCharge.Write();
 	channelVsShortGate.Write();
+	psdVsCharge.Write();
 
 	output.Close();
 

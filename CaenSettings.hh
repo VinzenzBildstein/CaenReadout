@@ -43,18 +43,18 @@ public:
 
 private:
 	int fNumberOfBoards;
-	std::vector<CAEN_DGTZ_ConnectionType> fLinkType;
+	std::vector<CAEN_DGTZ_ConnectionType> fLinkType; //enum
 	std::vector<uint32_t> fVmeBaseAddress;
-	std::vector<CAEN_DGTZ_DPP_AcqMode_t> fAcquisitionMode;
-	std::vector<CAEN_DGTZ_IOLevel_t> fIOLevel;
+	std::vector<CAEN_DGTZ_DPP_AcqMode_t> fAcquisitionMode; //enum
+	std::vector<CAEN_DGTZ_IOLevel_t> fIOLevel; //enum
 	std::vector<uint32_t> fChannelMask;
-	std::vector<CAEN_DGTZ_RunSyncMode_t> fRunSync;
+	std::vector<CAEN_DGTZ_RunSyncMode_t> fRunSync; //enum
 	std::vector<int> fEventAggregation;
-	std::vector<CAEN_DGTZ_TriggerMode_t> fTriggerMode;
+	std::vector<CAEN_DGTZ_TriggerMode_t> fTriggerMode; //enum
 	std::vector<std::vector<uint32_t> > fRecordLength;
 	std::vector<std::vector<uint32_t> > fDCOffset;
 	std::vector<std::vector<uint32_t> > fPreTrigger;
-	std::vector<std::vector<CAEN_DGTZ_PulsePolarity_t> > fPulsePolarity;
+	std::vector<std::vector<CAEN_DGTZ_PulsePolarity_t> > fPulsePolarity; //enum
 	std::vector<std::vector<bool> > fEnableCfd;
 	std::vector<std::vector<uint16_t> > fCfdParameters;
 	

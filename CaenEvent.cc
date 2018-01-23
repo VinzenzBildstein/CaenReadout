@@ -4,12 +4,12 @@
 
 ClassImp(CaenEvent)
 
-CaenEvent::CaenEvent(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event)
+CaenEvent::CaenEvent(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms)
 {
-	Read(channel, event);
+	Read(channel, event, waveforms);
 }
 
-void CaenEvent::Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event)
+void CaenEvent::Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms)
 {
 	fChannel = channel;
 	fTriggerTime = event.TimeTag;
@@ -25,6 +25,16 @@ void CaenEvent::Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event)
 	fFormat2 = event.Format2;
 	fBaseline = event.Baseline;
 	fPur = event.Pur;
+	fWaveforms.resize(2);
+	fDigitalWaveforms.resize(4);
+	if(waveforms != nullptr) {
+		fWaveforms[0].assign(waveforms->Trace1, waveforms->Trace1 + waveforms->Ns);
+		fWaveforms[1].assign(waveforms->Trace2, waveforms->Trace2 + waveforms->Ns);
+		fDigitalWaveforms[0].assign(waveforms->DTrace1, waveforms->DTrace1 + waveforms->Ns);
+		fDigitalWaveforms[1].assign(waveforms->DTrace2, waveforms->DTrace2 + waveforms->Ns);
+		fDigitalWaveforms[2].assign(waveforms->DTrace3, waveforms->DTrace3 + waveforms->Ns);
+		fDigitalWaveforms[3].assign(waveforms->DTrace4, waveforms->DTrace4 + waveforms->Ns);
+	}
 }
 
 uint64_t CaenEvent::GetTimestamp() const {

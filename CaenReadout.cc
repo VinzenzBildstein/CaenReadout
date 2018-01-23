@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include <curses.h>
+#include <signal.h>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -13,7 +14,58 @@
 #include "CaenSettings.hh"
 #include "CaenDigitizer.hh"
 
+bool controlC = false;
+int  nRows, nCols;
+
+void AtExitHandler()
+{
+   // this function is called on normal exits (via std::atexit) or
+   // if the programm is killed with ctrl-c (via sigaction and HandleSignal)
+   if(controlC) exit(0);
+   controlC = true;
+
+#ifdef USE_CURSES
+	std::vector<std::string> line(nRows);
+	for(int i = 0; i < nRows; ++i) {
+		line[i].resize(nCols+1);
+		mvinnstr(i, 0, const_cast<char*>(line[i].data()), nCols);
+		if(line[i].find_first_not_of(' ') == std::string::npos || static_cast<int>(line[i].find_first_not_of(' ')) == nCols) {
+			line[i].clear();
+		}
+	}
+
+	endwin(); //restore terminal settings
+
+	for(int i = 0; i < nRows-1; ++i) {
+		// skip empty line if the next one is empty as well
+		if(!line[i].empty() || !line[i+1].empty()) std::cout<<line[i]<<std::endl;
+	}
+	std::cout<<line[nRows-1]<<std::endl;
+#endif
+}
+
+void HandleSignal(int)
+{
+   // sigaction requires a function that takes an integer as argument
+   // since we don't care what the signal was, we just call AtExitHandler
+   AtExitHandler();
+}
+
+static void CatchSignals()
+{
+   struct sigaction action;
+   action.sa_handler = HandleSignal;
+   action.sa_flags = 0;
+   sigemptyset(&action.sa_mask);
+   sigaction(SIGINT, &action, NULL);
+   sigaction(SIGTERM, &action, NULL);
+   sigaction(SIGSEGV, &action, NULL);
+}
+
 int main(int argc, char** argv) {
+   std::atexit(AtExitHandler);
+   CatchSignals();
+
 	CommandLineInterface interface;
 	std::string settingsFilename;
 	interface.Add("-s", "settings file (required)", &settingsFilename);
@@ -23,8 +75,10 @@ int main(int argc, char** argv) {
 	interface.Add("-n", "number of triggers to record (either this, -r, or -t required)", &numberOfTriggers);
 	uint32_t secondsToRun = 0;
 	interface.Add("-t", "second to run (either this, -n, or -r required)", &secondsToRun);
+#ifdef USE_CURSES
 	uint32_t runNumber = 0;
 	interface.Add("-r", "run number (either this, -n, or -t required)", &runNumber);
+#endif
 	bool debug = false;
 	interface.Add("-d", "turn debugging messages on", &debug);
 
@@ -35,19 +89,24 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+#ifdef USE_CURSES
 	if(numberOfTriggers == 0 && secondsToRun == 0 && runNumber == 0) {
+#else
+	if(numberOfTriggers == 0 && secondsToRun == 0) {
+#endif
 		std::cerr<<"No triggers to record, zero seconds to run, and no run number? Done!"<<std::endl;
 		return 1;
 	}
 
+#ifdef USE_CURSES
 	//initscr(); //initialize curses
 	WINDOW* w = initscr();
 	cbreak(); //disable buffering and get characters one at a time
 	noecho(); //suppress echoing of typed characters
 	nodelay(stdscr, true); //make getch() work in non-blocking manner
 	keypad(stdscr, true); //get F1, F2, arrow keys, etc.
-	int row, col;
-	getmaxyx(w, row, col);
+	getmaxyx(w, nRows, nCols);
+#endif
 
 	CaenSettings settings(settingsFilename, debug);
 
@@ -55,10 +114,15 @@ int main(int argc, char** argv) {
 	try{
 		digitizer = new CaenDigitizer(settings, debug);
 	} catch(const std::runtime_error& e) {
-		std::cout<<e.what()<<std::endl;
+#ifdef USE_CURSES
+		printw("Error in CaenDigitizer: %s\n", e.what());
+#else
+		std::cout<<"Error in CaenDigitizer: "<<e.what()<<std::endl;
+#endif
 		return 1;
 	}
 
+#ifdef USE_CURSES
 	int ch = 0; //character read from input
 
 	if(runNumber == 0) {
@@ -66,7 +130,7 @@ int main(int argc, char** argv) {
 		try {
 			settings.RunLength(digitizer->Run(output, numberOfTriggers, secondsToRun));
 		} catch(const std::runtime_error& e) {
-			std::cout<<e.what()<<std::endl;
+			printw("%s\n", e.what());
 			return 1;
 		}
 		settings.Write();
@@ -99,23 +163,20 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+#else
+	std::cout<<"Opening file"<<std::endl;
+   TFile* output = new TFile(outputFilename.c_str(), "recreate");
 
-	std::vector<std::string> line(row);
-	for(int i = 0; i < row; ++i) {
-		line[i].resize(col+1);
-		mvinnstr(i, 0, const_cast<char*>(line[i].data()), col);
-		if(line[i].find_first_not_of(' ') == std::string::npos || static_cast<int>(line[i].find_first_not_of(' ')) == col) {
-			line[i].clear();
-		}
-	}
+   try {
+      settings.RunLength(digitizer->Run(output, numberOfTriggers, secondsToRun));
+   } catch(const std::runtime_error& e) {
+      std::cout<<e.what()<<std::endl;
+      return 1;
+   }
+   settings.Write();
 
-	endwin(); //restore terminal settings
-
-	for(int i = 0; i < row-1; ++i) {
-		// skip empty line if the next one is empty as well
-		if(!line[i].empty() || !line[i+1].empty()) std::cout<<line[i]<<std::endl;
-	}
-	std::cout<<line[row-1]<<std::endl;
+   output->Close();
+#endif
 
 	return 0;
 }

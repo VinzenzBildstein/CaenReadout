@@ -8,10 +8,10 @@
 class CaenEvent : public TObject {
 public:
 	CaenEvent() {}
-	CaenEvent(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event);
+	CaenEvent(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms);
 	~CaenEvent() {}
 
-	void Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event);
+	void Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms);
 	void Print(Option_t* opt = NULL) const;
 
 	void Channel(int value) { fChannel = value; }
@@ -35,6 +35,8 @@ public:
 	bool KiloCount() const { return fKiloCount; }
 	bool NLostCount() const { return fNLostCount; }
 	uint16_t ShortGate() const { return fShortGate; }
+	std::vector<uint16_t> Waveform(size_t i) const { return fWaveforms.at(i); }
+	std::vector<uint8_t>  DigitalWaveform(size_t i) const { return fDigitalWaveforms.at(i); }
 
 	uint64_t GetTimestamp() const;
 	double GetTime() const;
@@ -56,6 +58,8 @@ private:
 	uint32_t fFormat2;
 	uint16_t fBaseline;
 	uint16_t fPur;
+	std::vector<std::vector<uint16_t> > fWaveforms;
+	std::vector<std::vector<uint8_t> >  fDigitalWaveforms;
 
 	ClassDef(CaenEvent, 2)
 };
