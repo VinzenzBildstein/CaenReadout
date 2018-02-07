@@ -1,2 +1,4 @@
-Board.0.ChannelMask: 15
+NumberOfChannels: 2
+Board.0.AcquisitionMode: 1
+Board.0.ChannelMask: 3
 Board.0.EventAggregate: 0

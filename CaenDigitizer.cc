@@ -8,7 +8,7 @@
 #include <curses.h>
 
 CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
-	: fSettings(&settings), fOutputFile(nullptr), fTree(nullptr), fEvent(new CaenEvent), fEventsRead(0), fRunTime(0.), fDebug(debug)
+	: fSettings(&settings), fOutputFile(nullptr), fTree(nullptr), fEvent(new CaenEvent), fEventsRead(0), fRunTime(0.), fOldEventsRead(0), fOldRunTime(0.), fDebug(debug)
 {
 	if(fDebug) std::cout<<"constructing digitizer"<<std::endl;
 	CAEN_DGTZ_ErrorCode errorCode;
@@ -70,17 +70,7 @@ CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
 #ifdef USE_WAVEFORMS
 		// allocate waveforms, again not caring how many bytes have been allocated
 		uint32_t size;
-#ifdef USE_CURSES
-		printw("here 2\n");
-#else
-		std::cout<<"here 2"<<std::endl;
-#endif
 		errorCode = CAEN_DGTZ_MallocDPPWaveforms(fHandle[b], reinterpret_cast<void**>(&(fWaveforms[b])), &size);
-#ifdef USE_CURSES
-		printw("here 2\n");
-#else
-		std::cout<<"here 2"<<std::endl;
-#endif
 		if(errorCode != 0) {
 #ifdef USE_CURSES
 			printw("error 2\n");
@@ -91,7 +81,7 @@ CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
 		}
 #endif
 #ifdef USE_CURSES
-			printw("done with board %d\n", b);
+		if(fDebug) printw("done with board %d\n", b);
 #else
 		if(fDebug) std::cout<<"done with board "<<b<<std::endl;
 #endif
@@ -203,11 +193,12 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 		if(fRunTime - fOldRunTime > fSettings->Update()) {
 #ifdef USE_CURSES
 			//printw("%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
-			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
+			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s average, %.1f events/s in last %.1f seconds\n", fRunTime, fEventsRead, fEventsRead/fRunTime, (fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime), fRunTime - fOldRunTime);
 #else
-			std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s"<<std::endl;
+			std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s average, "<<(fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime)<<" events/s in last "<<fRunTime-fOldRunTime<<" seconds"<<std::endl;
 #endif
 			fOldRunTime = fRunTime;
+			fOldEventsRead = fEventsRead;
 		}
 #ifdef USE_CURSES
 		if((ch = getch()) != ERR) {

@@ -53,14 +53,14 @@ int main(int argc, char** argv)
 				// different channel
 				tsDiff.Fill(event->GetTimestamp() - it.second.GetTimestamp());
 				tDiff.Fill((event->GetTime() - it.second.GetTime())/1e3);
-				tDiffZoomVsCharge.Fill(event->Energy(), event->GetTime() - it.second.GetTime());
+				tDiffZoomVsCharge.Fill(event->Charge(), event->GetTime() - it.second.GetTime());
 				cfdDiffVsTsDiff.Fill(event->GetTimestamp() - it.second.GetTimestamp(), (event->Cfd() - it.second.Cfd())/512.);
 			}
 		}
 
-		channelVsCharge.Fill(event->Energy(), event->Channel());
+		channelVsCharge.Fill(event->Charge(), event->Channel());
 		channelVsShortGate.Fill(event->ShortGate(), event->Channel());
-		if(event->Channel() == 0) psdVsCharge.Fill(event->Energy(), static_cast<double>(event->ShortGate())/static_cast<double>(event->Energy()));
+		if(event->Channel() == 0) psdVsCharge.Fill(event->Charge(), static_cast<double>(event->ShortGate())/static_cast<double>(event->Charge()));
 
 		// update last event of this channel to current event
 		lastEvents[event->Channel()] = *event;

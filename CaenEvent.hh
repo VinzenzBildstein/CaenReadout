@@ -7,16 +7,17 @@
 
 class CaenEvent : public TObject {
 public:
-	CaenEvent() {}
+	CaenEvent();
 	CaenEvent(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms);
 	~CaenEvent() {}
 
+	void Clear();
 	void Read(int channel, const CAEN_DGTZ_DPP_PSD_Event_t& event, const CAEN_DGTZ_DPP_PSD_Waveforms_t* waveforms);
 	void Print(Option_t* opt = NULL) const;
 
 	void Channel(int value) { fChannel = value; }
 	void TriggerTime(uint32_t value) { fTriggerTime = value; }
-	void Energy(uint16_t value) { fEnergy = value; }
+	void Charge(uint16_t value) { fCharge = value; }
 	void ExtendedTimestamp(uint16_t value) { fExtendedTimestamp = value; }
 	void Cfd(uint16_t value) { fCfd = value; }
 	void LostTrigger(bool value) { fLostTrigger = value; }
@@ -24,10 +25,12 @@ public:
 	void KiloCount(bool value) { fKiloCount = value; }
 	void NLostCount(bool value) { fNLostCount = value; }
 	void ShortGate(uint16_t value) { fShortGate = value; }
+	void AddWaveformSample(size_t i, uint16_t sample);
+	void AddDigitalWaveformSample(size_t i, uint8_t sample);
 
 	int Channel() const { return fChannel; }
 	uint32_t TriggerTime() const { return fTriggerTime; }
-	uint16_t Energy() const { return fEnergy; }
+	uint16_t Charge() const { return fCharge; }
 	uint16_t ExtendedTimestamp() const { return fExtendedTimestamp; }
 	uint16_t Cfd() const { return fCfd; }
 	bool LostTrigger() const { return fLostTrigger; }
@@ -46,7 +49,7 @@ public:
 private:
 	int fChannel;
 	uint32_t fTriggerTime;
-	uint16_t fEnergy;
+	uint16_t fCharge;
 	uint16_t fExtendedTimestamp;
 	uint16_t fCfd;
 	bool fLostTrigger;
