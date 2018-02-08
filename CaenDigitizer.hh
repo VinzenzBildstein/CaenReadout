@@ -16,7 +16,7 @@ public:
 	CaenDigitizer(const CaenSettings& settings, bool debug);
 	~CaenDigitizer();
 
-	double Run(TFile* outputFile, uint64_t events = 0, double runTime = 0);
+	double Run(TFile* outputFile, std::ofstream& dataFile, uint64_t events = 0, double runTime = 0);
 
 private:
 	void ProgramDigitizer(int board);
@@ -46,8 +46,10 @@ private:
 
 	TStopwatch fStopwatch;
 
+	uint64_t fBytesRead;
 	uint64_t fEventsRead;
 	double   fRunTime;
+	uint64_t fOldBytesRead;
 	uint64_t fOldEventsRead;
 	double   fOldRunTime;
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <fstream>
 
 #include <curses.h>
 #include <signal.h>
@@ -71,6 +72,8 @@ int main(int argc, char** argv) {
 	interface.Add("-s", "settings file (required)", &settingsFilename);
 	std::string outputFilename;
 	interface.Add("-o", "output file (required, together with -r this is just the base name)", &outputFilename);
+	std::string dataOutputFilename;
+	interface.Add("-df", "data output file (optional, writes out the binary data)", &dataOutputFilename);
 	uint64_t numberOfTriggers = 0;
 	interface.Add("-n", "number of triggers to record (either this, -r, or -t required)", &numberOfTriggers);
 	uint32_t secondsToRun = 0;
@@ -84,9 +87,20 @@ int main(int argc, char** argv) {
 
 	interface.CheckFlags(argc, argv);
 
-	if(settingsFilename.empty() || outputFilename.empty()) {
-		std::cerr<<"You need to provide a settings file (-s flag), and an output file (-o flag)"<<std::endl;
+	if(settingsFilename.empty()) {
+		std::cerr<<"You need to provide a settings file (-s flag)"<<std::endl;
 		return 1;
+	}
+	if(outputFilename.empty() && dataOutputFilename.empty()) {
+		std::cerr<<"Warning, neither root output file (-o flag), nor data output file (-df flag) provided."<<std::endl;
+		char c = '\0';
+		do {
+			std::cout<<"Do you want to proceed without writing any output file? [y/N]"<<std::endl;
+			std::cin>>c;
+			if(c == 'n' || c == '\n') {
+				return 0;
+			}
+		} while (!std::cin.fail() && c != 'y');
 	}
 
 #ifdef USE_CURSES
@@ -126,15 +140,23 @@ int main(int argc, char** argv) {
 	int ch = 0; //character read from input
 
 	if(runNumber == 0) {
-		TFile* output = new TFile(outputFilename.c_str(), "recreate");
+		std::ofstream dataFile;
+		if(!dataOutputFilename.empty()) {
+			dataFile.open(dataOutputFilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+		}
+		TFile* output = nullptr;
+		if(!outputFilename.empty()) {
+			output = new TFile(outputFilename.c_str(), "recreate");
+		}
 		try {
-			settings.RunLength(digitizer->Run(output, numberOfTriggers, secondsToRun));
+			settings.RunLength(digitizer->Run(output, dataFile, numberOfTriggers, secondsToRun));
 		} catch(const std::runtime_error& e) {
 			printw("%s\n", e.what());
 			return 1;
 		}
 		settings.Write();
 		output->Close();
+		dataFile.close();
 	} else {
 		printw("use 's' to start/stop a run, and 'q' to quit the program\n");
 		while(ch != 'q') {
@@ -143,15 +165,23 @@ int main(int argc, char** argv) {
 					case 's':
 						{
 							printw("starting run %03d\n", runNumber);
-							TFile* output = new TFile(Form("%s_%03d.root", outputFilename.c_str(), runNumber++), "recreate");
+							std::ofstream dataFile;
+							if(!dataOutputFilename.empty()) {
+								dataFile.open(Form("%s_%03d.dat", dataOutputFilename.c_str(), runNumber), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+							}
+							TFile* output = nullptr;
+							if(!outputFilename.empty()) {
+								output = new TFile(Form("%s_%03d.root", outputFilename.c_str(), runNumber++), "recreate");
+							}
 							try {
-								settings.RunLength(digitizer->Run(output));
+								settings.RunLength(digitizer->Run(output, dataFile));
 							} catch(const std::runtime_error& e) {
 								std::cout<<e.what()<<std::endl;
 								return 1;
 							}
 							settings.Write();
 							output->Close();
+							dataFile.close();
 							break;
 						}
 					default:
@@ -165,10 +195,17 @@ int main(int argc, char** argv) {
 	}
 #else
 	std::cout<<"Opening file"<<std::endl;
-   TFile* output = new TFile(outputFilename.c_str(), "recreate");
+	std::ofstream dataFile;
+	if(!dataOutputFilename.empty()) {
+		dataFile.open(dataOutputFilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+	}
+   TFile* output = nullptr;
+	if(!outputFilename.empty()) {
+		output = new TFile(outputFilename.c_str(), "recreate");
+	}
 
    try {
-      settings.RunLength(digitizer->Run(output, numberOfTriggers, secondsToRun));
+      settings.RunLength(digitizer->Run(output, dataFile, numberOfTriggers, secondsToRun));
    } catch(const std::runtime_error& e) {
       std::cout<<e.what()<<std::endl;
       return 1;

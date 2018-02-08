@@ -4,11 +4,12 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <fstream>
 
 #include <curses.h>
 
 CaenDigitizer::CaenDigitizer(const CaenSettings& settings, bool debug)
-	: fSettings(&settings), fOutputFile(nullptr), fTree(nullptr), fEvent(new CaenEvent), fEventsRead(0), fRunTime(0.), fOldEventsRead(0), fOldRunTime(0.), fDebug(debug)
+	: fSettings(&settings), fOutputFile(nullptr), fTree(nullptr), fEvent(new CaenEvent), fBytesRead(0), fEventsRead(0), fRunTime(0.), fOldBytesRead(0), fOldEventsRead(0), fOldRunTime(0.), fDebug(debug)
 {
 	if(fDebug) std::cout<<"constructing digitizer"<<std::endl;
 	CAEN_DGTZ_ErrorCode errorCode;
@@ -106,12 +107,14 @@ CaenDigitizer::~CaenDigitizer()
 	}
 }
 
-double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
+double CaenDigitizer::Run(TFile* outputFile, std::ofstream& dataFile, uint64_t events, double runTime)
 {
 	CAEN_DGTZ_ErrorCode errorCode;
 	fOutputFile = outputFile;
 
-	CreateTree();
+	if(fOutputFile != nullptr) {
+		CreateTree();
+	}
 
 	int ch = 0; //character read from input
 
@@ -152,21 +155,31 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 				std::cout<<"Read "<<fBufferSize[b]<<" bytes"<<std::endl;
 			}
 			if(fBufferSize[b] > 0) {
+				fBytesRead += fBufferSize[b];
+				if(dataFile.is_open()) {
+					dataFile.write(fBuffer[b], fBufferSize[b]);
+				}
 				errorCode = CAEN_DGTZ_GetDPPEvents(fHandle[b], fBuffer[b], fBufferSize[b], reinterpret_cast<void**>(fEvents[b]), fNofEvents[b].data());
 				if(errorCode != 0) {
 					if(fDebug) std::cerr<<"Error "<<errorCode<<" when parsing events"<<std::endl;
 					continue;
 				}
+				// add number of events of each channel to total
+				for(auto nEv : fNofEvents[b]) {
+					fEventsRead += nEv;
+				}
 			}
 		}
-		if(fDebug) {
-			std::cout<<"----------------------------------------"<<std::endl;
+		if(fOutputFile != nullptr) {
+			if(fDebug) {
+				std::cout<<"----------------------------------------"<<std::endl;
+			}
+			SortEvents();
+			if(fDebug) {
+				std::cout<<"--------------------"<<std::endl;
+			}
+			WriteEvents();
 		}
-		SortEvents();
-		if(fDebug) {
-			std::cout<<"--------------------"<<std::endl;
-		}
-		WriteEvents();
 		if(fDebug) {
 			std::cout<<"----------------------------------------"<<std::endl;
 		}
@@ -193,12 +206,13 @@ double CaenDigitizer::Run(TFile* outputFile, uint64_t events, double runTime)
 		if(fRunTime - fOldRunTime > fSettings->Update()) {
 #ifdef USE_CURSES
 			//printw("%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
-			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s average, %.1f events/s in last %.1f seconds\n", fRunTime, fEventsRead, fEventsRead/fRunTime, (fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime), fRunTime - fOldRunTime);
+			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s, and %.3f MB/s average, %.1f events/s and %.3f MB/s in last %.1f seconds\n", fRunTime, fEventsRead, fEventsRead/fRunTime, fBytesRead/1024./1024./fRunTime, (fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime), (fBytesRead - fOldBytesRead)/1024./1024./(fRunTime - fOldRunTime), fRunTime - fOldRunTime);
 #else
 			std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s average, "<<(fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime)<<" events/s in last "<<fRunTime-fOldRunTime<<" seconds"<<std::endl;
 #endif
 			fOldRunTime = fRunTime;
 			fOldEventsRead = fEventsRead;
+			fOldBytesRead = fBytesRead;
 		}
 #ifdef USE_CURSES
 		if((ch = getch()) != ERR) {
@@ -351,52 +365,6 @@ void CaenDigitizer::CreateTree()
 	fTree->Branch("event",&fEvent);
 }
 
-void CaenDigitizer::DecodeData(int b)
-{
-	// is there a header on this data???
-	//
-
-	uint32_t i;
-	uint16_t tmpInt16;
-	//for(int b = 0; b < fSettings->NumberOfBoards(); ++b) {
-	if(fDebug) {
-		std::cout<<"sorting board "<<b<<" with buffer "<<static_cast<void*>(fBuffer[b])<<std::endl;
-		for(i = 0; i < fBufferSize[b]; i += 4) {
-			if(i%16 == 0) {
-				std::cout<<std::endl
-					<<std::setw(4)<<i/4<<" "<<std::flush;
-			}
-			std::cout<<std::hex<<"0x"<<std::setw(8)<<std::setfill('0')<<*reinterpret_cast<uint32_t*>(fBuffer[b]+i)<<std::dec<<" ";
-		}
-		std::cout<<std::endl;
-	}
-	i = 0;
-	while(i+12 < fBufferSize[b]) {
-		//first: 32 bit trigger time
-		fEvent->TriggerTime(*reinterpret_cast<uint32_t*>(fBuffer[b]+i));
-		i += 4;
-		//second: 16 bit energy
-		fEvent->Energy(*reinterpret_cast<uint16_t*>(fBuffer[b]+i));
-		i += 2;
-		//third: 32 bit "extra" = 16 bit extended time stamp, 6 bits flags, and 10 bits fine time stamp
-		fEvent->ExtendedTimestamp(*reinterpret_cast<uint16_t*>(fBuffer[b]+i));
-		i += 2;
-		tmpInt16 = *reinterpret_cast<uint16_t*>(fBuffer[b]+i);
-		i += 2;
-		fEvent->Cfd(tmpInt16 & 0x3ff);
-		fEvent->LostTrigger((tmpInt16 & 0x8000) == 0x8000);
-		fEvent->OverRange((tmpInt16 & 0x4000) == 0x4000);
-		fEvent->KiloCount((tmpInt16 & 0x2000) == 0x2000);
-		fEvent->NLostCount((tmpInt16 & 0x1000) == 0x1000);
-		//fourth: 16 bit short Gate
-		fEvent->ShortGate(*reinterpret_cast<uint16_t*>(fBuffer[b]+i));
-		i += 2;
-		fTree->Fill();
-		++fEventsRead;
-	}
-	//}
-}
-
 bool CaenDigitizer::CheckEvent(const CAEN_DGTZ_DPP_PSD_Event_t& event)
 {
 	if(event.TimeTag == 0 && (event.Extras>>16) == 0 && (event.Extras & 0x3ff) == 0) {
@@ -438,11 +406,9 @@ void CaenDigitizer::SortEvents()
 				auto tmpEvent = new CaenEvent(ch, fEvents[b][ch][ev], nullptr);
 #endif
 				fOrdered.insert(tmpEvent);
-				++fEventsRead;
 				if(fDebug) {
 					std::cout<<"board "<<b<<", channel "<<ch<<", event "<<ev<<":"<<std::endl;
 					tmpEvent->Print();
-					std::cout<<"total events read "<<fEventsRead<<std::endl;
 				}
 				//fTree->Fill();
 			}
