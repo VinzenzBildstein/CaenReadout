@@ -208,7 +208,7 @@ double CaenDigitizer::Run(TFile* outputFile, std::ofstream& dataFile, uint64_t e
 			//printw("%.1f s, got %lu events = %.1f events/s\n", fRunTime, fEventsRead, fEventsRead/fRunTime);
 			mvprintw(y, x, "%.1f s, got %lu events = %.1f events/s, and %.3f MB/s average, %.1f events/s and %.3f MB/s in last %.1f seconds\n", fRunTime, fEventsRead, fEventsRead/fRunTime, fBytesRead/1024./1024./fRunTime, (fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime), (fBytesRead - fOldBytesRead)/1024./1024./(fRunTime - fOldRunTime), fRunTime - fOldRunTime);
 #else
-			std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s average, "<<(fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime)<<" events/s in last "<<fRunTime-fOldRunTime<<" seconds"<<std::endl;
+			std::cout<<fRunTime<<" s, got "<<fEventsRead<<" events = "<<fEventsRead/fRunTime<<" events/s, and "<<fBytesRead/1024./1024./fRunTime<<" MB/s average, "<<(fEventsRead-fOldEventsRead)/(fRunTime - fOldRunTime)<<" events/s, and "<<(fBytesRead - fOldBytesRead)/1024./1024./(fRunTime - fOldRunTime)<<" MB/s in last "<<fRunTime-fOldRunTime<<" seconds"<<std::endl;
 #endif
 			fOldRunTime = fRunTime;
 			fOldEventsRead = fEventsRead;
@@ -263,7 +263,7 @@ void CaenDigitizer::ProgramDigitizer(int b)
 		throw std::runtime_error(Form("Error %d when resetting digitizer", errorCode));
 	}
 
-	errorCode = CAEN_DGTZ_SetDPPAcquisitionMode(fHandle[b], fSettings->AcquisitionMode(b), CAEN_DGTZ_DPP_SAVE_PARAM_EnergyAndTime);
+	errorCode = CAEN_DGTZ_SetDPPAcquisitionMode(fHandle[b], fSettings->AcquisitionMode(b), fSettings->SaveParam(b));
 
 	if(errorCode != 0) {
 		throw std::runtime_error(Form("Error %d when setting DPP acquisition mode", errorCode));
@@ -311,7 +311,7 @@ void CaenDigitizer::ProgramDigitizer(int b)
 	// enable EXTRA word
 	address = 0x8000;
 	CAEN_DGTZ_ReadRegister(fHandle[b], address, &data);
-	data |= 0x10000; // no mask necessary, we just set one bit
+	data |= 0x20000; // no mask necessary, we just set one bit
 	CAEN_DGTZ_WriteRegister(fHandle[b], address, data);
 
 	for(int ch = 0; ch < fSettings->NumberOfChannels(); ++ch) {

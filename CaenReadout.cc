@@ -95,9 +95,9 @@ int main(int argc, char** argv) {
 		std::cerr<<"Warning, neither root output file (-o flag), nor data output file (-df flag) provided."<<std::endl;
 		char c = '\0';
 		do {
-			std::cout<<"Do you want to proceed without writing any output file? [y/N]"<<std::endl;
+			std::cout<<"Do you want to proceed without writing any output file? [y/n]"<<std::endl;
 			std::cin>>c;
-			if(c == 'n' || c == '\n') {
+			if(c == 'n') {
 				return 0;
 			}
 		} while (!std::cin.fail() && c != 'y');

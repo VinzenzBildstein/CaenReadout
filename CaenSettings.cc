@@ -38,6 +38,7 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 	fLinkType.resize(fNumberOfBoards);
 	fVmeBaseAddress.resize(fNumberOfBoards);
 	fAcquisitionMode.resize(fNumberOfBoards);
+	fSaveParam.resize(fNumberOfBoards);
 	fIOLevel.resize(fNumberOfBoards);
 	fChannelMask.resize(fNumberOfBoards);
 	fRunSync.resize(fNumberOfBoards);
@@ -54,6 +55,7 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 		fLinkType[i]         = CAEN_DGTZ_USB;//0
 		fVmeBaseAddress[i]   = 0;
 		fAcquisitionMode[i]  = static_cast<CAEN_DGTZ_DPP_AcqMode_t>(settings->GetValue(Form("Board.%d.AcquisitionMode", i), CAEN_DGTZ_DPP_ACQ_MODE_Mixed));//2
+		fSaveParam[i]        = static_cast<CAEN_DGTZ_DPP_SaveParam_t>(settings->GetValue(Form("Board.%d.SaveParam", i), CAEN_DGTZ_DPP_SAVE_PARAM_EnergyAndTime));//2
 		fIOLevel[i]          = static_cast<CAEN_DGTZ_IOLevel_t>(settings->GetValue(Form("Board.%d.IOlevel", i), CAEN_DGTZ_IOLevel_NIM));//0
 		fChannelMask[i]      = settings->GetValue(Form("Board.%d.ChannelMask", i), 0xff);
 		fRunSync[i]          = static_cast<CAEN_DGTZ_RunSyncMode_t>(settings->GetValue(Form("Board.%d.RunSync", i), CAEN_DGTZ_RUN_SYNC_Disabled));//0

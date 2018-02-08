@@ -21,6 +21,7 @@ public:
 	CAEN_DGTZ_ConnectionType LinkType(int i) const { return fLinkType[i]; }
 	uint32_t VmeBaseAddress(int i) const { return fVmeBaseAddress[i]; }
 	CAEN_DGTZ_DPP_AcqMode_t AcquisitionMode(int i) const { return fAcquisitionMode[i]; }
+	CAEN_DGTZ_DPP_SaveParam_t SaveParam(int i) const { return fSaveParam[i]; }
 	CAEN_DGTZ_IOLevel_t IOLevel(int i) const { return fIOLevel[i]; }
 	uint32_t ChannelMask(int i) const { return fChannelMask[i]; }
 	CAEN_DGTZ_RunSyncMode_t RunSync(int i) const { return fRunSync[i]; }
@@ -46,6 +47,7 @@ private:
 	std::vector<CAEN_DGTZ_ConnectionType> fLinkType; //enum
 	std::vector<uint32_t> fVmeBaseAddress;
 	std::vector<CAEN_DGTZ_DPP_AcqMode_t> fAcquisitionMode; //enum
+	std::vector<CAEN_DGTZ_DPP_SaveParam_t> fSaveParam; //enum
 	std::vector<CAEN_DGTZ_IOLevel_t> fIOLevel; //enum
 	std::vector<uint32_t> fChannelMask;
 	std::vector<CAEN_DGTZ_RunSyncMode_t> fRunSync; //enum
