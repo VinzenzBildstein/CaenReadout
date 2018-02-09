@@ -432,7 +432,7 @@ void CaenDigitizer::WriteEvents(bool finish)
 			fEvent->Print();
 		}
 		fTree->Fill();
-		//delete fOrdered.begin();
+		delete *fOrdered.begin();
 		fOrdered.erase(fOrdered.begin());
 		if(finish) {
 			if(true || fOrdered.size()%1000 == 0) {
