@@ -154,9 +154,13 @@ int main(int argc, char** argv) {
 			printw("%s\n", e.what());
 			return 1;
 		}
-		settings.Write();
-		output->Close();
-		dataFile.close();
+		if(output != nullptr && output->IsOpen()) {
+			settings.Write();
+			output->Close();
+		}
+		if(dataFile.is_open()) {
+			dataFile.close();
+		}
 	} else {
 		printw("use 's' to start/stop a run, and 'q' to quit the program\n");
 		while(ch != 'q') {
@@ -179,9 +183,13 @@ int main(int argc, char** argv) {
 								std::cout<<e.what()<<std::endl;
 								return 1;
 							}
-							settings.Write();
-							output->Close();
-							dataFile.close();
+							if(output != nullptr && output->IsOpen()) {
+								settings.Write();
+								output->Close();
+							}
+							if(dataFile.is_open()) {
+								dataFile.close();
+							}
 							break;
 						}
 					default:
@@ -210,9 +218,13 @@ int main(int argc, char** argv) {
       std::cout<<e.what()<<std::endl;
       return 1;
    }
-   settings.Write();
-
-   output->Close();
+	if(output != nullptr && output->IsOpen()) {
+		settings.Write();
+		output->Close();
+	}
+	if(dataFile.is_open()) {
+		dataFile.close();
+	}
 #endif
 
 	return 0;

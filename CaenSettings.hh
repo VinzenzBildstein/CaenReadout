@@ -68,6 +68,6 @@ private:
 	double fRunLength;
 	double fUpdate;
 
-	ClassDef(CaenSettings, 3);
+	ClassDef(CaenSettings, 4);
 };
 #endif
