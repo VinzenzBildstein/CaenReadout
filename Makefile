@@ -16,6 +16,9 @@ NAME		= CaenReadout
 ROOTLIBS     	:= $(shell root-config --glibs)
 ROOTINC      	:= -I$(shell root-config --incdir)
 
+GRSILIBS   := $(shell grsi-config --all-libs)
+GRSICFLAGS := $(shell grsi-config --cflags)
+
 COMMON_DIR 	= $(HOME)/CommandLineInterface
 
 INCLUDES        = -I$(COMMON_DIR) -I.
@@ -24,12 +27,12 @@ LIBRARIES	= ncurses CommandLineInterface CAENDigitizer
 
 CC		= gcc
 CXX   = g++
-CPPFLAGS	= $(ROOTINC) $(INCLUDES) -fPIC
+CPPFLAGS	= $(ROOTINC) $(GRSICFLAGS) $(INCLUDES) -fPIC
 CXXFLAGS	= -pedantic -Wall -Wno-long-long -g -O3 -std=c++11 -DUSE_WAVEFORMS -DUSE_CURSES
 
 LDFLAGS		= -g -fpic
 
-LDLIBS 		= -L$(LIB_DIR) $(ROOTLIBS) $(addprefix -l,$(LIBRARIES))
+LDLIBS 		= -L$(LIB_DIR) $(ROOTLIBS) $(GRSILIBS) $(addprefix -l,$(LIBRARIES))
 
 LOADLIBES = \
 				CaenSettings.o \
@@ -44,7 +47,7 @@ LOADLIBES = \
 
 # -------------------- rules --------------------
 
-all:  $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms $(LIB_DIR)/lib$(NAME).so
+all:  $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms $(BIN_DIR)/MakeHist $(LIB_DIR)/lib$(NAME).so
 	@echo Done
 
 $(LIB_DIR)/lib$(NAME).so: $(LOADLIBES)
@@ -59,7 +62,7 @@ $(LIB_DIR)/lib$(NAME).so: $(LOADLIBES)
 # -------------------- default rule for executables --------------------
 
 $(BIN_DIR)/%: %.cc $(LOADLIBES)
-	$(CXX) $< $(CXXFLAGS) $(CPPFLAGS) $(LOADLIBES) $(LDLIBS) -o $@
+	$(CXX) $< $(CXXFLAGS) $(CPPFLAGS) $(LOADLIBES) $(LDLIBS) -DHAS_XML -o $@
 
 # -------------------- Root stuff --------------------
 
@@ -84,4 +87,4 @@ tar:
 # -------------------- clean --------------------
 
 clean:
-	rm  -f $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms *.o
+	rm  -f $(BIN_DIR)/$(NAME) $(BIN_DIR)/Histograms $(BIN_DIR)/MakeHist *.o
