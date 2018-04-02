@@ -8,31 +8,28 @@
 
 SHELL 		= /bin/sh
 
-LIB_DIR 	= $(HOME)/lib
+LIB_DIR 	   = $(HOME)/lib
 BIN_DIR		= $(HOME)/bin
 
-NAME		= CaenReadout
+NAME		   = CaenReadout
 
-ROOTLIBS     	:= $(shell root-config --glibs)
-ROOTINC      	:= -I$(shell root-config --incdir)
-
-GRSILIBS   := $(shell grsi-config --all-libs)
-GRSICFLAGS := $(shell grsi-config --cflags)
+ROOTLIBS   := $(shell root-config --glibs)
+ROOTINC    := -I$(shell root-config --incdir)
 
 COMMON_DIR 	= $(HOME)/CommandLineInterface
 
-INCLUDES        = -I$(COMMON_DIR) -I.
+INCLUDES    = -I$(COMMON_DIR) -I.
 
 LIBRARIES	= ncurses CommandLineInterface CAENDigitizer
 
 CC		= gcc
 CXX   = g++
-CPPFLAGS	= $(ROOTINC) $(GRSICFLAGS) $(INCLUDES) -fPIC
+CPPFLAGS	= $(ROOTINC) $(INCLUDES) -fPIC
 CXXFLAGS	= -pedantic -Wall -Wno-long-long -g -O3 -std=c++11 -DUSE_WAVEFORMS -DUSE_CURSES
 
 LDFLAGS		= -g -fpic
 
-LDLIBS 		= -L$(LIB_DIR) $(ROOTLIBS) $(GRSILIBS) $(addprefix -l,$(LIBRARIES))
+LDLIBS 		= -L$(LIB_DIR) $(ROOTLIBS) $(addprefix -l,$(LIBRARIES))
 
 LOADLIBES = \
 				CaenSettings.o \

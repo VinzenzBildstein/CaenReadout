@@ -1,4 +1,7 @@
 NumberOfChannels: 2
 Board.0.AcquisitionMode: 1
+Board.0.SaveParam: 2
 Board.0.ChannelMask: 3
 Board.0.EventAggregate: 0
+#Board.0.Channel.0.RecordLength: 0
+#Board.0.Channel.1.RecordLength: 0
