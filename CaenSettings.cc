@@ -16,7 +16,7 @@ CaenSettings::CaenSettings()
 CaenSettings::CaenSettings(const std::string& filename, bool debug)
 {
 	auto settings = new TEnv(filename.c_str());
-	if(settings->ReadFile(filename.c_str(), kEnvLocal) != 0) {
+	if(settings == nullptr || settings->ReadFile(filename.c_str(), kEnvLocal) != 0) {
 		printw("Error occured trying to read \"%s\"\n", filename.c_str());
 		throw;
 	}
@@ -70,8 +70,8 @@ CaenSettings::CaenSettings(const std::string& filename, bool debug)
 		fCfdParameters[i].resize(fNumberOfChannels);
 		for(int ch = 0; ch < fNumberOfChannels; ++ch) {
 			fRecordLength[i][ch]  = settings->GetValue(Form("Board.%d.Channel.%d.RecordLength", i, ch), 192);
-			fDCOffset[i][ch]      = settings->GetValue(Form("Board.%d.Channel.%d.RunSync", i, ch), 0x8000);
-			fPreTrigger[i][ch]    = settings->GetValue(Form("Board.%d.Channel.%d.RunSync", i, ch), 80);
+			fDCOffset[i][ch]      = settings->GetValue(Form("Board.%d.Channel.%d.DcOffset", i, ch), 0x8000);
+			fPreTrigger[i][ch]    = settings->GetValue(Form("Board.%d.Channel.%d.PreTrigger", i, ch), 80);
 			fPulsePolarity[i][ch] = static_cast<CAEN_DGTZ_PulsePolarity_t>(settings->GetValue(Form("Board.%d.Channel.%d.PulsePolarity", i, ch), CAEN_DGTZ_PulsePolarityNegative));//1
 			fEnableCfd[i][ch]     = settings->GetValue(Form("Board.%d.Channel.%d.EnableCfd", i, ch), true);
 			fCfdParameters[i][ch] = (settings->GetValue(Form("Board.%d.Channel.%d.CfdDelay", i, ch), 5) & 0xff);
